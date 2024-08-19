@@ -1,31 +1,58 @@
 import torch
 import pandas as pd
 import torch_geometric.utils as pyg_utils
+import numpy as np
 
-def get_data():
+def get_data(as_df=False):
     '''
     
     '''
-    return df_to_graph(preprocess_dataset())
+    if as_df:
+        return preprocess_dataset()
+    else:
+        return df_to_graph(preprocess_dataset())
 
 def preprocess_dataset():
     '''
     
     '''
-    data = pd.read_csv('/data/tox21.csv')
+    data = pd.read_csv('/Users/ali/Documents/portfolio_projects/GTOX/data/tox21_processed_resampled1500.csv')
     # Remove any column with incomplete toxicity data
     data.dropna(inplace=True)
-    data['toxicity'] = data[['NR-AR',
-                          'NR-AR-LBD',
-                          'NR-AhR', 'NR-Aromatase',
-                          'NR-ER', 'NR-ER-LBD',
-                          'NR-PPAR-gamma',
-                          'SR-ARE', 'SR-ATAD5',
-                          'SR-HSE','SR-MMP','SR-p53']].any(axis=1).astype(int)
+    try:
+        data['toxicity'] = data[['NR-AR',
+                            'NR-AR-LBD',
+                            'NR-AhR', 'NR-Aromatase',
+                            'NR-ER', 'NR-ER-LBD',
+                            'NR-PPAR-gamma',
+                            'SR-ARE', 'SR-ATAD5',
+                            'SR-HSE','SR-MMP','SR-p53']].any(axis=1).astype(int)
+    except KeyError:
+        pass
+
     cleaned_data = data[['smiles', 'toxicity']]
     return cleaned_data.reset_index()
 
-def df_to_graph(data, EF=False):
+def remove_zero_rows(df, x):
+    '''
+    remove x number of rows where the value of 'toxicity' is zero
+    '''
+    # Find the indices of rows where the column value is 0
+    zero_indices = df[df['toxicity'] == 0].index
+    
+    # Ensure we don't try to remove more rows than exist
+    if len(zero_indices) < x:
+        x = len(zero_indices)
+    
+    # Randomly select `x` indices to drop
+    indices_to_drop = np.random.choice(zero_indices, x, replace=False)
+    
+    # Drop those rows from the DataFrame
+    df_dropped = df.drop(indices_to_drop)
+    
+    return df_dropped
+
+def df_to_graph(data, EF=True):
     '''
     
     '''

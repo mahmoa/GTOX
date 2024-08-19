@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch_geometric as pyg
 from torch_geometric.nn import GCNConv
+from torch_geometric.nn.pool import TopKPooling
+from torch_geometric.nn.norm import GraphNorm
 from torch_geometric.nn import global_mean_pool as gap, global_max_pool as gmp
 import torch.nn.functional as F
 from torch.nn import Linear
@@ -26,11 +28,11 @@ class GCN(nn.Module):
         self.conv2 = GCNConv(embedding_size, embedding_size)
         self.conv3 = GCNConv(embedding_size, embedding_size)
         self.fc = nn.Linear(embedding_size, out_channels)
+        self.norm = GraphNorm(embedding_size)
 
     def forward(self, x, edge_index, batch_index):
-        # First convolution layer
         x = self.initial_conv(x, edge_index)
-        # Activation between convolutions
+        x = self.norm(x, batch_index)
         x = F.leaky_relu(x)
 
         x = self.conv1(x, edge_index)
